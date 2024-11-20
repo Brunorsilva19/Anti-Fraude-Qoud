@@ -63,8 +63,8 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom)) // Certifique-se de que esta versão do BOM é compatível
     implementation(libs.androidx.material3) // Atualizando para material3 compatível
     implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.biometric.ktx)
     implementation(platform(libs.androidx.compose.bom))
+    implementation("androidx.biometric:biometric:1.4.0-alpha02")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

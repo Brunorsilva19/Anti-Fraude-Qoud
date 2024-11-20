@@ -47,7 +47,7 @@ fun HomeScreen() {
             DocumentoPage(navController = navController) // Defina a tela de destino conforme necessário
         }
         composable("biometria") {
-            BiometriaPage(navController = navController) // Defina a tela de destino conforme necessário
+            BiometriaPage(navController = navController, activity = BiometriaActivity()) // Defina a tela de destino conforme necessário
         }
     }
 }

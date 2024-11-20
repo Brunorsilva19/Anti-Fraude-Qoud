@@ -2,7 +2,6 @@ package br.com.fiap.antifraudequod
 
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -18,33 +17,33 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
 import br.com.fiap.antifraudequod.ui.theme.AntiFraudeQuodTheme
 import br.com.fiap.antifraudequod.R.drawable.ic_mao
 import br.com.fiap.antifraudequod.components.Footer
 import br.com.fiap.antifraudequod.components.Header
-import android.content.Context
-import androidx.biometric.BiometricManager
 
-class BiometriaActivity : ComponentActivity() {
+class BiometriaActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             AntiFraudeQuodTheme {
-                BiometriaScreen(context = applicationContext)
+                BiometriaScreen(this)
             }
         }
     }
 }
 
 @Composable
-fun BiometriaScreen(context: Context) {
+fun BiometriaScreen(activity: FragmentActivity) {
     val navController = rememberNavController()
 
     NavHost(navController = navController, startDestination = "biometria") {
         composable("biometria") {
-            BiometriaPage(navController = navController, context = context)
+            BiometriaPage(navController = navController, activity = activity)
         }
         composable("home") {
             HomePage(navController = navController)
@@ -59,7 +58,7 @@ fun BiometriaScreen(context: Context) {
 }
 
 @Composable
-fun BiometriaPage(navController: NavHostController, context: Context) {
+fun BiometriaPage(navController: NavHostController, activity: FragmentActivity) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -79,7 +78,7 @@ fun BiometriaPage(navController: NavHostController, context: Context) {
 
         // Botão de verificação de biometria
         Button(
-            onClick = { iniciarAutenticacaoBiometrica(context) },
+            onClick = { iniciarAutenticacaoBiometrica(activity) },
             modifier = Modifier.padding(top = 16.dp)
         ) {
             Text(text = "Verificar Digital")
@@ -90,15 +89,31 @@ fun BiometriaPage(navController: NavHostController, context: Context) {
     }
 }
 
-fun iniciarAutenticacaoBiometrica(context: Context) {
-    val biometricManager = BiometricManager.from(context)
+fun iniciarAutenticacaoBiometrica(activity: FragmentActivity) {
+    val biometricManager = BiometricManager.from(activity)
 
-    when (biometricManager.canAuthenticate()) {
+    when (biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL)) {
         BiometricManager.BIOMETRIC_SUCCESS -> {
-            val executor = ContextCompat.getMainExecutor(context)
+            val executor = ContextCompat.getMainExecutor(activity)
             val biometricPrompt = BiometricPrompt(
-                BiometricPrompt.AuthenticationCallback(),
-                executor
+                activity,
+                executor,
+                object : BiometricPrompt.AuthenticationCallback() {
+                    override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                        super.onAuthenticationSucceeded(result)
+                        Toast.makeText(activity, "Autenticação bem-sucedida", Toast.LENGTH_SHORT).show()
+                    }
+
+                    override fun onAuthenticationFailed() {
+                        super.onAuthenticationFailed()
+                        Toast.makeText(activity, "Autenticação falhou", Toast.LENGTH_SHORT).show()
+                    }
+
+                    override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                        super.onAuthenticationError(errorCode, errString)
+                        Toast.makeText(activity, "Erro de autenticação: $errString", Toast.LENGTH_SHORT).show()
+                    }
+                }
             )
 
             val promptInfo = BiometricPrompt.PromptInfo.Builder()
@@ -110,13 +125,13 @@ fun iniciarAutenticacaoBiometrica(context: Context) {
             biometricPrompt.authenticate(promptInfo)
         }
         BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE -> {
-            Toast.makeText(context, "Este dispositivo não possui sensor biométrico", Toast.LENGTH_SHORT).show()
+            Toast.makeText(activity, "Este dispositivo não possui sensor biométrico", Toast.LENGTH_SHORT).show()
         }
         BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE -> {
-            Toast.makeText(context, "Sensor biométrico indisponível", Toast.LENGTH_SHORT).show()
+            Toast.makeText(activity, "Sensor biométrico indisponível", Toast.LENGTH_SHORT).show()
         }
         BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> {
-            Toast.makeText(context, "Nenhuma digital registrada no dispositivo", Toast.LENGTH_SHORT).show()
+            Toast.makeText(activity, "Nenhuma digital registrada no dispositivo", Toast.LENGTH_SHORT).show()
         }
     }
 }
@@ -125,6 +140,6 @@ fun iniciarAutenticacaoBiometrica(context: Context) {
 @Composable
 fun BiometriaScreenPreview() {
     AntiFraudeQuodTheme {
-        BiometriaPage(navController = rememberNavController(), context = Context)
+        BiometriaPage(navController = rememberNavController(), activity = BiometriaActivity())
     }
 }
