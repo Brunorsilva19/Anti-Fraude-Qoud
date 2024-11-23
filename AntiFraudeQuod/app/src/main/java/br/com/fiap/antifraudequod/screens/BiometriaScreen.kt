@@ -56,9 +56,10 @@ fun BiometriaScreen(activity: FragmentActivity) {
         }
     }
 }
-
 @Composable
 fun BiometriaPage(navController: NavHostController, activity: FragmentActivity) {
+    val isAuthenticated = remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -66,75 +67,95 @@ fun BiometriaPage(navController: NavHostController, activity: FragmentActivity) 
         verticalArrangement = Arrangement.SpaceBetween,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Cabeçalho
         Header()
 
-        // Ícone de dedo centralizado
-        Image(
-            painter = painterResource(id = ic_mao),
-            contentDescription = "Ícone de Biometria",
-            modifier = Modifier.size(80.dp) // Ajuste o tamanho do ícone
-        )
-
-        // Botão de verificação de biometria
+        // Botão de Verificação de Digital
         Button(
-            onClick = { iniciarAutenticacaoBiometrica(activity) },
-            modifier = Modifier.padding(top = 16.dp)
+            onClick = { iniciarAutenticacaoBiometrica(activity, isAuthenticated) },
+            modifier = Modifier
+                .padding(top = 16.dp)
+                .fillMaxWidth(),
+            enabled = true,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (isAuthenticated.value) androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Gray
+            )
         ) {
             Text(text = "Verificar Digital")
         }
 
-        // Rodapé na parte inferior
         Footer(navController = navController)
     }
 }
 
-fun iniciarAutenticacaoBiometrica(activity: FragmentActivity) {
-    val biometricManager = BiometricManager.from(activity)
+fun iniciarAutenticacaoBiometrica(activity: FragmentActivity, isAuthenticated: MutableState<Boolean>) {
+    try {
+        val biometricManager = BiometricManager.from(activity)
 
-    when (biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL)) {
-        BiometricManager.BIOMETRIC_SUCCESS -> {
-            val executor = ContextCompat.getMainExecutor(activity)
-            val biometricPrompt = BiometricPrompt(
-                activity,
-                executor,
-                object : BiometricPrompt.AuthenticationCallback() {
-                    override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                        super.onAuthenticationSucceeded(result)
-                        Toast.makeText(activity, "Autenticação bem-sucedida", Toast.LENGTH_SHORT).show()
-                    }
+        val canAuthenticate = biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL)
 
-                    override fun onAuthenticationFailed() {
-                        super.onAuthenticationFailed()
-                        Toast.makeText(activity, "Autenticação falhou", Toast.LENGTH_SHORT).show()
-                    }
-
-                    override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                        super.onAuthenticationError(errorCode, errString)
-                        Toast.makeText(activity, "Erro de autenticação: $errString", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            )
-
-            val promptInfo = BiometricPrompt.PromptInfo.Builder()
-                .setTitle("Autenticação Biométrica")
-                .setSubtitle("Coloque seu dedo no sensor de impressão digital")
-                .setNegativeButtonText("Cancelar")
-                .build()
-
-            biometricPrompt.authenticate(promptInfo)
+        when (canAuthenticate) {
+            BiometricManager.BIOMETRIC_SUCCESS -> {
+                // Mostrar diálogo de biometria
+                exibirDialogoEscolha(activity, isAuthenticated)
+            }
+            BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE -> {
+                // Falta hardware biométrico
+                showErrorToast(activity, "Este dispositivo não possui sensor biométrico")
+            }
+            BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE -> {
+                // Sensor biométrico indisponível
+                showErrorToast(activity, "Sensor biométrico indisponível")
+            }
+            BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> {
+                // Nenhuma biometria cadastrada
+                showErrorToast(activity, "Nenhuma digital registrada no dispositivo")
+                abrirConfiguracoesBiometricas(activity)
+            }
+            else -> {
+                // Erro desconhecido
+                showErrorToast(activity, "Erro desconhecido ao verificar biometria")
+            }
         }
-        BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE -> {
-            Toast.makeText(activity, "Este dispositivo não possui sensor biométrico", Toast.LENGTH_SHORT).show()
-        }
-        BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE -> {
-            Toast.makeText(activity, "Sensor biométrico indisponível", Toast.LENGTH_SHORT).show()
-        }
-        BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> {
-            Toast.makeText(activity, "Nenhuma digital registrada no dispositivo", Toast.LENGTH_SHORT).show()
-        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+        showErrorToast(activity, "Erro ao iniciar biometria: ${e.message}")
     }
 }
+
+fun showErrorToast(activity: FragmentActivity, message: String) {
+    Toast.makeText(activity, message, Toast.LENGTH_SHORT).show()
+}
+
+fun exibirDialogoEscolha(activity: FragmentActivity, isAuthenticated: MutableState<Boolean>) {
+    val biometricPrompt = BiometricPrompt(activity, Executors.newSingleThreadExecutor(), object : BiometricPrompt.AuthenticationCallback() {
+        override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+            super.onAuthenticationSucceeded(result)
+            isAuthenticated.value = true
+            Toast.makeText(activity, "Autenticação bem-sucedida!", Toast.LENGTH_SHORT).show()
+        }
+
+        override fun onAuthenticationFailed() {
+            super.onAuthenticationFailed()
+            Toast.makeText(activity, "Falha na autenticação", Toast.LENGTH_SHORT).show()
+        }
+
+        override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+            super.onAuthenticationError(errorCode, errString)
+            // Log do erro para entender melhor
+            Log.e("Biometria", "Erro de autenticação: $errString")
+            Toast.makeText(activity, "Erro na autenticação: $errString", Toast.LENGTH_SHORT).show()
+        }
+    })
+
+    val promptInfo = BiometricPrompt.PromptInfo.Builder()
+        .setTitle("Autenticação Biométrica")
+        .setSubtitle("Use sua digital para autenticar")
+        .setNegativeButtonText("Cancelar")
+        .build()
+
+    biometricPrompt.authenticate(promptInfo)
+}
+
 
 @Preview(showBackground = true)
 @Composable
