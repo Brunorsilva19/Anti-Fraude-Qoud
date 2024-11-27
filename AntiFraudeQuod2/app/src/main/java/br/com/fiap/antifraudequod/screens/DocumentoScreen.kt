@@ -8,6 +8,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -53,7 +55,10 @@ fun DocumentoScreen() {
             FormularioPage(navController = navController) // Defina a tela de destino conforme necessário
         }
         composable("biometria") {
-            BiometriaPage(navController = navController, activity = BiometriaActivity()) // Defina a tela de destino conforme necessário
+            BiometriaPage(navController = navController) // Defina a tela de destino conforme necessário
+        }
+        composable("facial") {
+            FacialPage(navController = navController) // Defina a tela de destino conforme necessário
         }
     }
 }
@@ -63,132 +68,171 @@ fun DocumentoPage(navController: NavHostController) {
     var showPopup by remember { mutableStateOf(false) }
     var facePhotoUri by remember { mutableStateOf<Uri?>(null) }
     var documentPhotoUri by remember { mutableStateOf<Uri?>(null) }
-    var showError by remember { mutableStateOf(false) } // Estado para mostrar erro
+    var showError by remember { mutableStateOf("") } // Agora uma string para a mensagem de erro
+    var isVerified by remember { mutableStateOf(false) }
 
-    // Launcher para selecionar a imagem do rosto
     val getImage = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         uri?.let {
             facePhotoUri = it
-            showError = false // Reseta o erro ao anexar uma imagem
+            showError = "" // Limpa qualquer mensagem de erro
         }
     }
 
-    // Launcher para selecionar a imagem do documento
     val getDocumentImage = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         uri?.let {
             documentPhotoUri = it
-            showError = false // Reseta o erro ao anexar uma imagem
+            showError = "" // Limpa qualquer mensagem de erro
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        // Cabeçalho
-        Header()
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Box(
+    // Scaffold para organizar o layout
+    Scaffold(
+        topBar = {
+            Header() // Cabeçalho
+        },
+        bottomBar = {
+            Footer(navController = navController) // Rodapé
+        }
+    ) { paddingValues ->
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .weight(1f),
-            contentAlignment = Alignment.Center
+                .padding(paddingValues) // Para garantir que o conteúdo não sobreponha o rodapé
+                .verticalScroll(rememberScrollState()) // Adiciona a rolagem vertical
         ) {
-            // Ícone de câmera
-            Icon(
-                painter = painterResource(id = android.R.drawable.ic_menu_camera),
-                contentDescription = "Ícone de câmera",
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Caixa de conteúdo centralizada com ícone de câmera
+            Box(
                 modifier = Modifier
-                    .size(64.dp)
-                    .clickable { showPopup = true }, // Abre o popup ao clicar
-                tint = Color.Black
-            )
+                    .fillMaxSize()
+                    .weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    painter = painterResource(id = android.R.drawable.ic_menu_camera),
+                    contentDescription = "Ícone de câmera",
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clickable { showPopup = true },
+                    tint = Color.Black
+                )
 
-            // Popup com as opções de envio
-            if (showPopup) {
-                Dialog(onDismissRequest = { showPopup = false }) {
-                    Surface(
-                        shape = MaterialTheme.shapes.medium,
-                        color = Color.White,
-                        shadowElevation = 4.dp
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                // Popup para escolher a imagem
+                if (showPopup) {
+                    Dialog(onDismissRequest = { showPopup = false }) {
+                        Surface(
+                            shape = MaterialTheme.shapes.medium,
+                            color = Color.White,
+                            shadowElevation = 4.dp
                         ) {
-                            Text("Escolha uma opção", style = MaterialTheme.typography.titleMedium)
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            // Enviar foto do rosto
-                            Button(
-                                onClick = {
-                                    getImage.launch("image/*") // Abre a galeria para selecionar uma imagem
-                                    showPopup = false // Fecha o popup
-                                },
-                                modifier = Modifier.fillMaxWidth()
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                Text("Enviar foto do rosto")
-                            }
+                                Text("Escolha uma opção", style = MaterialTheme.typography.titleMedium)
 
-                            Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(8.dp))
 
-                            // Enviar foto do documento
-                            Button(
-                                onClick = {
-                                    getDocumentImage.launch("image/*") // Abre a galeria para selecionar uma imagem
-                                    showPopup = false // Fecha o popup
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text("Enviar foto do documento")
+                                // Botão para foto do rosto
+                                Button(
+                                    onClick = {
+                                        getImage.launch("image/*")
+                                        showPopup = false
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("Enviar foto do rosto")
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                // Botão para foto do documento
+                                Button(
+                                    onClick = {
+                                        getDocumentImage.launch("image/*")
+                                        showPopup = false
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("Enviar foto do documento")
+                                }
                             }
                         }
                     }
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        // Mostrar mensagem de erro se houver falha de verificação
-        if (showError) {
-            Text(
-                text = "Erro: Você precisa anexar ambas as imagens para continuar.",
-                color = Color.Red,
+            // Exibição de erro ou mensagem de validação
+            if (showError.isNotEmpty()) {
+                Text(
+                    text = showError,
+                    color = Color.Red,
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .align(Alignment.CenterHorizontally)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Botão Verificar
+            Button(
+                onClick = {
+                    // Valida as imagens
+                    when {
+                        facePhotoUri == null && documentPhotoUri == null -> {
+                            showError = "Documento inválido: Nenhuma imagem anexada."
+                            isVerified = false
+                        }
+                        facePhotoUri == null || documentPhotoUri == null -> {
+                            showError = "Documento inválido."
+                            isVerified = false
+                        }
+                        else -> {
+                            showError = "Documento válido."
+                            isVerified = true
+                        }
+                    }
+                },
                 modifier = Modifier
-                    .padding(horizontal = 16.dp)
-                    .align(Alignment.CenterHorizontally)
-            )
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isVerified) Color.Red else Color.Gray // Botão vermelho se verificado, cinza caso contrário
+                )
+            ) {
+                Text("Verificar", color = Color.White)
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Botão Avançar, habilitado somente se as fotos forem enviadas
+            Button(
+                onClick = {
+                    if (isVerified) {
+                        navController.navigate("biometria")
+                    }
+                },
+                enabled = isVerified, // Somente habilitado se a verificação for bem-sucedida
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isVerified) Color.Red else Color.Gray
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp)
+            ) {
+                Text("Avançar", color = Color.White)
+            }
         }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Botão Avançar
-        Button(
-            onClick = {
-                if (facePhotoUri != null && documentPhotoUri != null) {
-                    // Se ambas as imagens estiverem anexadas, navega para a página de biometria
-                    navController.navigate("biometria")
-                } else {
-                    // Exibe mensagem de erro se apenas uma imagem foi adicionada
-                    showError = true
-                }
-            },
-            enabled = facePhotoUri != null && documentPhotoUri != null, // Habilita o botão somente após os anexos
-            colors = ButtonDefaults.buttonColors(
-                containerColor = if (facePhotoUri != null && documentPhotoUri != null) Color.Red else Color.Gray
-            ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp)
-        ) {
-            Text("Avançar", color = Color.White)
-        }
-
-        // Rodapé
-        Footer(navController = navController)
     }
 }
+
+
+
+
 
 @Preview(showBackground = true)
 @Composable

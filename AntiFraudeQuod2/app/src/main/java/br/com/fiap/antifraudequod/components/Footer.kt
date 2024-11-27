@@ -16,6 +16,7 @@ import br.com.fiap.antifraudequod.R.drawable.ic_home
 import br.com.fiap.antifraudequod.R.drawable.ic_camera
 import br.com.fiap.antifraudequod.R.drawable.ic_formulario
 import br.com.fiap.antifraudequod.R.drawable.ic_mao
+import br.com.fiap.antifraudequod.R.drawable.ic_rosto
 
 
 @Composable
@@ -68,6 +69,15 @@ fun Footer(navController: NavHostController) {
             Icon(
                 painter = painterResource(id = ic_mao),
                 contentDescription = "Biometria",
+                tint = Color.White
+            )
+        }
+        IconButton(onClick = {
+            navController.navigate("facial")
+        }) {
+            Icon(
+                painter = painterResource(id = ic_rosto),
+                contentDescription = "Facial",
                 tint = Color.White
             )
         }

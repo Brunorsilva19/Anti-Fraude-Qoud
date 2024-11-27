@@ -57,14 +57,13 @@ android {
 dependencies {
 
     // Usando uma versão anterior do androidx.core-ktx para manter a compatibilidade com compileSdk 34
-    implementation("androidx.core:core-ktx:1.13.0")
+    implementation("androidx.core:core-ktx:1.15.0")
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom)) // Certifique-se de que esta versão do BOM é compatível
     implementation(libs.androidx.material3) // Atualizando para material3 compatível
     implementation(libs.androidx.navigation.compose)
     implementation(platform(libs.androidx.compose.bom))
-    implementation("androidx.biometric:biometric:1.4.0-alpha02")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

@@ -4,9 +4,13 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -47,7 +51,10 @@ fun HomeScreen() {
             DocumentoPage(navController = navController) // Defina a tela de destino conforme necessário
         }
         composable("biometria") {
-            BiometriaPage(navController = navController, activity = BiometriaActivity()) // Defina a tela de destino conforme necessário
+            BiometriaPage(navController = navController) // Defina a tela de destino conforme necessário
+        }
+        composable("facial") {
+            FacialPage(navController = navController) // Defina a tela de destino conforme necessário
         }
     }
 }
@@ -55,17 +62,33 @@ fun HomeScreen() {
 // Tela HomePage com cabeçalho e rodapé
 @Composable
 fun HomePage(navController: NavHostController) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        // Cabeçalho
-        Header()
+    // Definindo a rolagem vertical
+    val scrollState = rememberScrollState()
 
-        // Corpo da tela (sem o texto de boas-vindas)
-        Box(modifier = Modifier.weight(1f)) {
-            // Conteúdo principal da tela
+    // Usando o Scaffold para organização do layout
+    Scaffold(
+        topBar = {
+            Header() // Cabeçalho
+        },
+        bottomBar = {
+            Footer(navController = navController) // Rodapé
         }
+    ) { paddingValues ->
+        // Conteúdo principal da tela
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues) // Para garantir que o conteúdo não sobreponha o rodapé
+                .verticalScroll(scrollState) // Adiciona a rolagem vertical
+        ) {
+            // Espaçamento superior
+            Spacer(modifier = Modifier.height(16.dp))
 
-        // Rodapé com o botão de formulário
-        Footer(navController = navController)
+            // Corpo da tela (conteúdo adicional ou formulário, se necessário)
+            Box(modifier = Modifier.weight(1f)) {
+                // Adicionar o conteúdo que você precisa aqui
+            }
+        }
     }
 }
 

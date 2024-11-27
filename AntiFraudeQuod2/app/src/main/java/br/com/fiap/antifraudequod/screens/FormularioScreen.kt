@@ -53,7 +53,10 @@ fun FormualarioScreen() {
             DocumentoPage(navController = navController) // Defina a tela de destino conforme necessário
         }
         composable("biometria") {
-            BiometriaPage(navController = navController, activity = BiometriaActivity()) // Defina a tela de destino conforme necessário
+            BiometriaPage(navController = navController) // Defina a tela de destino conforme necessário
+        }
+        composable("facial") {
+            FacialPage(navController = navController) // Defina a tela de destino conforme necessário
         }
     }
 }
@@ -63,24 +66,28 @@ fun FormularioPage(navController: NavHostController) {
 
     val scrollState = rememberScrollState() // Estado de rolagem
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(scrollState) // Adiciona a rolagem vertical
-    ) {
-        // Cabeçalho
-        Header()
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Box(
+    // Usando o Scaffold para organização do layout
+    Scaffold(
+        topBar = {
+            Header() // Cabeçalho
+        },
+        bottomBar = {
+            Footer(navController = navController) // Rodapé
+        }
+    ) { paddingValues ->
+        // Conteúdo principal da tela
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .weight(1f),
-            contentAlignment = Alignment.Center
+                .padding(paddingValues) // Para garantir que o conteúdo não sobreponha o rodapé
+                .verticalScroll(scrollState) // Adiciona a rolagem vertical
         ) {
+            // Espaçamento superior
+            Spacer(modifier = Modifier.height(16.dp))
+
             // Conteúdo do formulário
             Column(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxWidth()
             ) {
 
                 // Estados dos campos
@@ -95,6 +102,12 @@ fun FormularioPage(navController: NavHostController) {
                 var enderecoError by remember { mutableStateOf("") }
                 var telefoneError by remember { mutableStateOf("") }
 
+                // Mensagens de sucesso
+                var cpfSuccess by remember { mutableStateOf("") }
+                var nomeSuccess by remember { mutableStateOf("") }
+                var enderecoSuccess by remember { mutableStateOf("") }
+                var telefoneSuccess by remember { mutableStateOf("") }
+
                 // Estado do score
                 var score by remember { mutableStateOf(0) }
                 var scoreMessage by remember { mutableStateOf("") }
@@ -103,6 +116,9 @@ fun FormularioPage(navController: NavHostController) {
                 // Estados de verificação e ativação do botão Avançar
                 var isVerified by remember { mutableStateOf(false) }
                 var isFormValid by remember { mutableStateOf(false) }
+
+                // Mensagem de sucesso
+                var successMessage by remember { mutableStateOf("") }
 
                 // Função de validação do telefone
                 fun validatePhone(phone: String): Boolean {
@@ -171,6 +187,7 @@ fun FormularioPage(navController: NavHostController) {
                         isValid = false
                         "CPF inválido"
                     } else {
+                        cpfSuccess = "CPF válido!"  // Mensagem de sucesso
                         ""
                     }
 
@@ -179,6 +196,7 @@ fun FormularioPage(navController: NavHostController) {
                         isValid = false
                         "Nome é obrigatório"
                     } else {
+                        nomeSuccess = "Nome válido!"  // Mensagem de sucesso
                         ""
                     }
 
@@ -187,6 +205,7 @@ fun FormularioPage(navController: NavHostController) {
                         isValid = false
                         "Endereço é obrigatório"
                     } else {
+                        enderecoSuccess = "Endereço válido!"  // Mensagem de sucesso
                         ""
                     }
 
@@ -194,13 +213,22 @@ fun FormularioPage(navController: NavHostController) {
                     val isPhoneValid = validatePhone(telefone)
                     telefoneError = if (!isPhoneValid) {
                         isValid = false
-                        "Telefone inválido"
+                        "Chip Duplicado Inválido"  // Mensagem de erro quando o telefone for inválido
                     } else {
+                        telefoneSuccess = "Chip Válido!"  // Mensagem de sucesso
                         ""
                     }
 
                     // Atualize o estado do formulário após a validação
                     isFormValid = isValid
+
+                    // Se todos os campos estiverem válidos, configurar a mensagem de sucesso
+                    if (isValid) {
+                        successMessage = ""
+                    } else {
+                        successMessage = ""  // Limpar mensagem de sucesso em caso de erro
+                    }
+
                     return isValid
                 }
 
@@ -231,6 +259,7 @@ fun FormularioPage(navController: NavHostController) {
                     value = cpf,
                     onValueChange = { cpf = it },
                     errorMessage = cpfError,
+                    successMessage = cpfSuccess,  // Passando a mensagem de sucesso
                     keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Next)
                 )
 
@@ -244,6 +273,16 @@ fun FormularioPage(navController: NavHostController) {
                     )
                 }
 
+                // Exibir mensagem de sucesso
+                if (successMessage.isNotEmpty()) {
+                    Text(
+                        text = successMessage,
+                        color = Color.Green,  // Cor para sucesso
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Campos de Nome, Endereço e Telefone...
@@ -253,6 +292,7 @@ fun FormularioPage(navController: NavHostController) {
                     value = nome,
                     onValueChange = { nome = it },
                     errorMessage = nomeError,
+                    successMessage = nomeSuccess,  // Passando a mensagem de sucesso
                     keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Next)
                 )
 
@@ -264,6 +304,7 @@ fun FormularioPage(navController: NavHostController) {
                     value = endereco,
                     onValueChange = { endereco = it },
                     errorMessage = enderecoError,
+                    successMessage = enderecoSuccess,  // Passando a mensagem de sucesso
                     keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Next)
                 )
 
@@ -276,6 +317,7 @@ fun FormularioPage(navController: NavHostController) {
                     value = telefone,
                     onValueChange = { telefone = it },
                     errorMessage = telefoneError,
+                    successMessage = telefoneSuccess,  // Passando a mensagem de sucesso
                     keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done)
                 )
 
@@ -302,28 +344,25 @@ fun FormularioPage(navController: NavHostController) {
                     // Botão Avançar
                     Button(
                         onClick = {
+                            // Ação do botão Avançar
                             if (isFormValid) {
-                                navController.navigate("documento") // Navegação para próxima tela
+                                // Navegação ou ação de sucesso
+                                navController.navigate("documento")
                             }
                         },
                         modifier = Modifier.weight(1f),
-                        enabled = isFormValid,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (isFormValid) Color.Red else Color.Gray
-                        )
+                        ),
+                        enabled = isFormValid
                     ) {
                         Text(text = "Avançar", color = Color.White)
                     }
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Footer(navController = navController)
             }
         }
     }
 }
-
 
 @Composable
 fun CustomTextField(
@@ -332,6 +371,7 @@ fun CustomTextField(
     value: String,
     onValueChange: (String) -> Unit,
     errorMessage: String,
+    successMessage: String,  // Adicionando parâmetro para mensagem de sucesso
     keyboardOptions: KeyboardOptions
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -351,10 +391,22 @@ fun CustomTextField(
             isError = errorMessage.isNotEmpty()
         )
 
+        // Exibindo a mensagem de erro, se houver
         if (errorMessage.isNotEmpty()) {
             Text(
                 text = errorMessage,
-                style = MaterialTheme.typography.bodySmall.copy(color = Color.Red),
+                color = Color.Red,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+
+        // Exibindo a mensagem de sucesso, se houver
+        if (successMessage.isNotEmpty()) {
+            Text(
+                text = successMessage,
+                color = Color.Green,  // Cor para sucesso
+                style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 4.dp)
             )
         }
